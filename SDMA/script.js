@@ -71,6 +71,34 @@ function draw() {
 }
 draw();
 
+
+// logger function: log(string, color_as_string);
 function log(txt,color) {
-    // TODO
+    content('#log','<span style="color:' + color + ';">' + txt + '</span><br>');
 }
+
+// modify content on html
+function content(divSelector, value) {
+    document.querySelector(divSelector).innerHTML += value;
+}
+
+
+
+
+
+// example usage of log() -- remove when not needed
+
+var counter = 1;
+
+setInterval(example_log_setter, 1000);
+
+function example_log_setter() {
+    log("Hello world " + counter, "red");
+    log("Hello HTML " + counter, "blue");
+    counter += 1;
+}
+
+
+
+
+
