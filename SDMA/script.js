@@ -36,9 +36,15 @@ function drawSpaceDivisions() {
     }
 }
 
+var roadLaneYCoordMap = {
+    lane1: (spaceDivisionLength + positioningAccuracy) / 2 + 2 * spaceDivisionLength,
+    lane2: (spaceDivisionLength + positioningAccuracy) / 2 + spaceDivisionLength,
+    lane3: (spaceDivisionLength + positioningAccuracy) / 2,
+}
+
 function resetCoords(node) {
     node.x = 0;
-    node.y = (spaceDivisionLength + positioningAccuracy) / 2 + 2 * spaceDivisionLength;
+    node.y = roadLaneYCoordMap.lane1;
     return node;
 }
 
@@ -96,6 +102,10 @@ function getSpeed(color) {
     return parseInt(document.getElementById(color).value);
 }
 
+function setSpeed(color, value) {
+    return document.getElementById(color).value = value.toString();
+}
+
 // logger function: log(string, color_as_string);
 function log(txt, color) {
     content('#log','<span style="color:' + color + ';">' + txt + '</span><br>');
@@ -130,12 +140,52 @@ function broadcastPositions() {
         for ([_color, _node] of Object.entries(nodes)) {
             if (node != _node && isInRadius(node, _node)) {
                 log(`Node [${_color}] received position from node [${color}]`, _color);
+                handleTooCloseSituationIfExists(color, node, _color, _node);
             }
         }
     }
 }
 
 function isInRadius(sourceNode, targetNode) {
-    let distance = Math.sqrt((sourceNode.x - targetNode.x) ** 2 + (sourceNode.y - targetNode.y) ** 2);
-    return distance <= broadcastRadius
+    let distance = calculateDistance(sourceNode, targetNode);
+    return distance <= broadcastRadius;
+}
+
+function calculateDistance(node1, node2) {
+    return distance = Math.sqrt((node1.x - node2.x) ** 2 + (node1.y - node2.y) ** 2);
+}
+
+var minDistanceBetweenVehicles = params.minDistanceBetweenVehicles * scaleFactor;
+
+function handleTooCloseSituationIfExists(color1, node1, color2, node2) {
+    if (node1.y != node2.y) {
+        // they are in different lanes so nothing to do
+        return;
+    }
+
+    let distance = calculateDistance(node1, node2);
+    if (distance < minDistanceBetweenVehicles) {
+        let speedOfNode1 = getSpeed(color1);
+        let speedOfNode2 = getSpeed(color2);
+
+        if (node1.x <= node2.x && speedOfNode1 > speedOfNode2) {
+            changeLaneOrSlowDown(node1);
+        }
+        else if (node1.x > node2.x && speedOfNode1 < speedOfNode2) {
+            changeLaneOrSlowDown(node2);
+        }
+    }
+}
+
+function changeLaneOrSlowDown(node) {
+    if (node.y == roadLaneYCoordMap.lane1) {
+        node.y = roadLaneYCoordMap.lane2;
+    }
+    else if (node.y == roadLaneYCoordMap.lane2) {
+        node.y = roadLaneYCoordMap.lane3;
+    }
+    else {
+        // we are already at the leftmost lane, we cannot overtake properly on a "highway" in this case, so we must slow down
+        // TODO: implement if there are more than 3 nodes
+    }
 }
