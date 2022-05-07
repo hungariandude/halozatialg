@@ -16,5 +16,9 @@ canvas {
 }
 
 #log {
-    overflow: auto;
+    height: 400px;
+    overflow: scroll;
+    white-space:pre-wrap;
 }
+
+

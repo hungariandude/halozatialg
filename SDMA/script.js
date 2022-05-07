@@ -109,11 +109,18 @@ function setSpeed(color, value) {
 // logger function: log(string, color_as_string);
 function log(txt, color) {
     content('#log','<span style="color:' + color + ';">' + txt + '</span><br>');
+    //$("#log").scrollTop($("#log")[0].scrollHeight);
+
+    //var objDiv = document.getElementById("#log");
+    //objDiv.scrollTop = objDiv.scrollHeight;
 }
+
 
 // modify content on html
 function content(divSelector, value) {
-    document.querySelector(divSelector).innerHTML += value;
+    var res = value + document.querySelector(divSelector).innerHTML;
+    document.querySelector(divSelector).innerHTML = res;
+    //document.querySelector(divSelector).innerHTML += value;
 }
 
 
@@ -143,6 +150,7 @@ function broadcastPositions() {
                 handleTooCloseSituationIfExists(color, node, _color, _node);
             }
         }
+        log(`\n`, color);
     }
 }
 
