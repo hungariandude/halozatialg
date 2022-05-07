@@ -4,10 +4,15 @@
     </head>
     <body>
         <div id="wrapper">
+            <div id="configBlock">
+                Red node speed: <input id="red" type="number" min="0" step="1" value="5"><br>
+                Green node speed: <input id="green" type="number" min="0" step="1" value="10"><br>
+                Blue node speed: <input id="blue" type="number" min="0" step="1" value="20"><br>
+            </div>
             <div>
                 <canvas id="myCanvas"></canvas>
             </div>
-            <div>
+            <div id="frametimeBlock">
                 Frametime: <span id="frametime"></span>
             </div>
             <div id="log"> </div>

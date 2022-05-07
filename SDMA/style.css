@@ -5,3 +5,16 @@ canvas {
 #wrapper {
     text-align: center;
 }
+
+#configBlock {
+    margin-bottom: 10px;
+}
+
+#frametimeBlock {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#log {
+    overflow: auto;
+}

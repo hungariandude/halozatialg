@@ -2,13 +2,15 @@ var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
 
 var params = {
-    roadLength: 500,
+    roadLength: 100, // m
     roadLanes: 3,
-    minDistanceBetweenVehicles: 10,
-    spaceDivisionLength: 5,
-    positioningAccuracy: 2
+    minDistanceBetweenVehicles: 10, // m
+    spaceDivisionLength: 5, // m
+    positioningAccuracy: 2, // m
+    broadcastRadius: 20, // m
+    broadcastInterval: 1000 // ms
 }
-var scaleFactor = 1;
+var scaleFactor = 15;
 var positioningAccuracy = params.positioningAccuracy * scaleFactor;
 var spaceDivisionCountInLane = params.roadLength / params.spaceDivisionLength;
 var spaceDivisionLength = params.spaceDivisionLength * scaleFactor;
@@ -23,6 +25,7 @@ function drawBackground() {
 
 function drawSpaceDivisions() {
     ctx.beginPath();
+    ctx.strokeStyle = "black";
     ctx.lineWidth = positioningAccuracy;
 
     for (var i = 0; i < spaceDivisionCountInLane; ++i) {
@@ -33,29 +36,47 @@ function drawSpaceDivisions() {
     }
 }
 
-var circleCoords = {
-    x: 0,
-    y: (spaceDivisionLength + positioningAccuracy) / 2
+function resetCoords(node) {
+    node.x = 0;
+    node.y = (spaceDivisionLength + positioningAccuracy) / 2 + 2 * spaceDivisionLength;
+    return node;
 }
 
-function drawMovingCircle() {
-    if (circleCoords.x > canvas.width) {
-        circleCoords.x = 0;
+var nodes = {
+    red: resetCoords({}),
+    green: resetCoords({}),
+    blue: resetCoords({})
+}
+
+var moveUnit = 0.01 * scaleFactor;
+var broadcastRadius = params.broadcastRadius * scaleFactor;
+
+function drawNodes() {
+    for ([color, node] of Object.entries(nodes)) {
+        if (node.x > canvas.width) {
+            resetCoords(node);
+        }
+
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, spaceDivisionLength / 4, 0, 2 * Math.PI);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.arc(node.x, node.y, broadcastRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        node.x += getSpeed(color) * moveUnit;
     }
-
-    ctx.beginPath();
-    ctx.arc(circleCoords.x, circleCoords.y, scaleFactor * 2, 0, 2 * Math.PI);
-    ctx.fillStyle = "red";
-    ctx.fill();
-
-    circleCoords.x += 5;
 }
 
 var lastRender = performance.now();
 
 function displayRenderTime() {
-    var now = performance.now();
-    var delta = now - lastRender;
+    let now = performance.now();
+    let delta = now - lastRender;
     lastRender = now;
     document.getElementById("frametime").textContent = delta.toFixed() + " ms";
 }
@@ -63,7 +84,7 @@ function displayRenderTime() {
 function draw() {
     drawBackground();
     drawSpaceDivisions();
-    drawMovingCircle();
+    drawNodes();
 
     displayRenderTime();
 
@@ -71,9 +92,12 @@ function draw() {
 }
 draw();
 
+function getSpeed(color) {
+    return parseInt(document.getElementById(color).value);
+}
 
 // logger function: log(string, color_as_string);
-function log(txt,color) {
+function log(txt, color) {
     content('#log','<span style="color:' + color + ';">' + txt + '</span><br>');
 }
 
@@ -88,7 +112,7 @@ function content(divSelector, value) {
 
 // example usage of log() -- remove when not needed
 
-var counter = 1;
+/*var counter = 1;
 
 setInterval(example_log_setter, 1000);
 
@@ -96,9 +120,22 @@ function example_log_setter() {
     log("Hello world " + counter, "red");
     log("Hello HTML " + counter, "blue");
     counter += 1;
+}*/
+
+setInterval(broadcastPositions, params.broadcastInterval);
+
+function broadcastPositions() {
+    for ([color, node] of Object.entries(nodes)) {
+        log(`Broadcasting position of node [${color}]`, color);
+        for ([_color, _node] of Object.entries(nodes)) {
+            if (node != _node && isInRadius(node, _node)) {
+                log(`Node [${_color}] received position from node [${color}]`, _color);
+            }
+        }
+    }
 }
 
-
-
-
-
+function isInRadius(sourceNode, targetNode) {
+    let distance = Math.sqrt((sourceNode.x - targetNode.x) ** 2 + (sourceNode.y - targetNode.y) ** 2);
+    return distance <= broadcastRadius
+}
