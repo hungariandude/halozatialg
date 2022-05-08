@@ -87,6 +87,8 @@ function displayRenderTime() {
     document.getElementById("frametime").textContent = delta.toFixed() + " ms";
 }
 
+var paused = false;
+
 function draw() {
     drawBackground();
     drawSpaceDivisions();
@@ -94,7 +96,9 @@ function draw() {
 
     displayRenderTime();
 
-    requestAnimationFrame(draw);
+    if (!paused) {
+        requestAnimationFrame(draw);
+    }
 }
 draw();
 
@@ -139,7 +143,16 @@ function example_log_setter() {
     counter += 1;
 }*/
 
-setInterval(broadcastPositions, params.broadcastInterval);
+var timerId;
+
+function startTimer() {
+    timerId = setInterval(broadcastPositions, params.broadcastInterval);
+}
+startTimer();
+
+function stopTimer() {
+    clearInterval(timerId);
+}
 
 function broadcastPositions() {
     for ([color, node] of Object.entries(nodes)) {
@@ -197,3 +210,23 @@ function changeLaneOrSlowDown(node) {
         // TODO: implement if there are more than 3 nodes
     }
 }
+
+function addButtonEventHandlers() {
+    document.getElementById("pauseButton").onclick = function() {
+        paused = !paused;
+        if (!paused) {
+            draw();
+            startTimer();
+            console.log("Started.")
+        }
+        else {
+            stopTimer();
+            console.log("Paused.")
+        }
+    };
+    document.getElementById("clearLogButton").onclick = function() {
+        document.getElementById("log").innerHTML = "";
+        console.log("Log cleared.")
+    };
+}
+addButtonEventHandlers();

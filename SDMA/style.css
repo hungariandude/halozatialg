@@ -15,6 +15,10 @@ canvas {
     margin-bottom: 10px;
 }
 
+#buttonBlock {
+    margin-bottom: 10px;
+}
+
 #log {
     height: 400px;
     overflow: scroll;
