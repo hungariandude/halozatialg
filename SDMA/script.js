@@ -18,21 +18,54 @@ var spaceDivisionLength = params.spaceDivisionLength * scaleFactor;
 canvas.width = params.roadLength * scaleFactor + positioningAccuracy;
 canvas.height = params.roadLanes * params.spaceDivisionLength * scaleFactor + positioningAccuracy;
 
+var spaceDivisions = [];
+function initSpaceDivisions() {
+    for (var i = 0; i < spaceDivisionCountInLane; ++i) {
+        for (var j = 0; j < params.roadLanes; ++j) {
+            spaceDivisions[j * spaceDivisionCountInLane + i] = {
+                x: i * spaceDivisionLength + positioningAccuracy / 2,
+                y: j * spaceDivisionLength + positioningAccuracy / 2,
+                width: spaceDivisionLength,
+                height: spaceDivisionLength
+            }
+        }
+    }
+}
+initSpaceDivisions();
+
 function drawBackground() {
     ctx.fillStyle = "gray";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 function drawSpaceDivisions() {
-    ctx.beginPath();
     ctx.strokeStyle = "black";
     ctx.lineWidth = positioningAccuracy;
 
-    for (var i = 0; i < spaceDivisionCountInLane; ++i) {
-        for (var j = 0; j < params.roadLanes; ++j) {
-            ctx.rect(i * spaceDivisionLength + positioningAccuracy / 2, j * spaceDivisionLength + positioningAccuracy / 2, spaceDivisionLength, spaceDivisionLength);
-            ctx.stroke();
+    let activeSpaceDivision = getActiveSpaceDivision();
+
+    spaceDivisions.forEach(spaceDivision => {
+        ctx.beginPath();
+        ctx.rect(spaceDivision.x, spaceDivision.y, spaceDivision.width, spaceDivision.height);
+        if (spaceDivision == activeSpaceDivision) {
+            ctx.fillStyle = "lightgray";
+            ctx.fill();
         }
+        ctx.stroke();
+    });
+}
+
+var startMillis = performance.now();
+const timeDivision = params.broadcastInterval / spaceDivisions.length;
+function getActiveSpaceDivision() {
+    let elapsedMillis = (performance.now() - startMillis) * getRelativeTime() / 100;
+    let elapsedTimeDivisions = Math.ceil(elapsedMillis / timeDivision);
+    let remainder = elapsedTimeDivisions % spaceDivisions.length;
+    if (remainder == 0) {
+        return spaceDivisions[spaceDivisions.length - 1];
+    }
+    else {
+        return spaceDivisions[remainder - 1];
     }
 }
 
@@ -54,8 +87,11 @@ var nodes = {
     blue: resetCoords({})
 }
 
-var moveUnit = 0.01 * scaleFactor;
 var broadcastRadius = params.broadcastRadius * scaleFactor;
+
+function getMoveUnit() {
+    return 0.0001 * getRelativeTime() * scaleFactor;
+}
 
 function drawNodes() {
     for ([color, node] of Object.entries(nodes)) {
@@ -74,7 +110,7 @@ function drawNodes() {
         ctx.arc(node.x, node.y, broadcastRadius, 0, 2 * Math.PI);
         ctx.stroke();
 
-        node.x += getSpeed(color) * moveUnit;
+        node.x += getSpeed(color) * getMoveUnit();
     }
 }
 
@@ -108,6 +144,10 @@ function getSpeed(color) {
 
 function setSpeed(color, value) {
     return document.getElementById(color).value = value.toString();
+}
+
+function getRelativeTime() {
+    return parseInt(document.getElementById("relativeTime").value);
 }
 
 // logger function: log(string, color_as_string);
