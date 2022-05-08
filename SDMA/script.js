@@ -8,7 +8,7 @@ var params = {
     spaceDivisionLength: 5, // m
     positioningAccuracy: 2, // m
     broadcastRadius: 20, // m
-    broadcastInterval: 1000 // ms
+    broadcastInterval: 100 // ms
 }
 var scaleFactor = 15;
 var positioningAccuracy = params.positioningAccuracy * scaleFactor;
@@ -33,6 +33,9 @@ function initSpaceDivisions() {
 }
 initSpaceDivisions();
 
+var previousActiveSpaceDivision = null;
+var activeSpaceDivision = null;
+
 function drawBackground() {
     ctx.fillStyle = "gray";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -41,8 +44,6 @@ function drawBackground() {
 function drawSpaceDivisions() {
     ctx.strokeStyle = "black";
     ctx.lineWidth = positioningAccuracy;
-
-    let activeSpaceDivision = getActiveSpaceDivision();
 
     spaceDivisions.forEach(spaceDivision => {
         ctx.beginPath();
@@ -58,7 +59,7 @@ function drawSpaceDivisions() {
 var startMillis = performance.now();
 const timeDivision = params.broadcastInterval / spaceDivisions.length;
 function getActiveSpaceDivision() {
-    let elapsedMillis = (performance.now() - startMillis) * getRelativeTime() / 100;
+    let elapsedMillis = (performance.now() - startMillis) * getTimeLapseRate() / 100;
     let elapsedTimeDivisions = Math.ceil(elapsedMillis / timeDivision);
     let remainder = elapsedTimeDivisions % spaceDivisions.length;
     if (remainder == 0) {
@@ -90,7 +91,7 @@ var nodes = {
 var broadcastRadius = params.broadcastRadius * scaleFactor;
 
 function getMoveUnit() {
-    return 0.0001 * getRelativeTime() * scaleFactor;
+    return 0.0001 * getTimeLapseRate() * scaleFactor;
 }
 
 function drawNodes() {
@@ -110,6 +111,8 @@ function drawNodes() {
         ctx.arc(node.x, node.y, broadcastRadius, 0, 2 * Math.PI);
         ctx.stroke();
 
+        tryBroadcast(color, node);
+
         node.x += getSpeed(color) * getMoveUnit();
     }
 }
@@ -126,6 +129,9 @@ function displayRenderTime() {
 var paused = false;
 
 function draw() {
+    previousActiveSpaceDivision = activeSpaceDivision;
+    activeSpaceDivision = getActiveSpaceDivision();
+
     drawBackground();
     drawSpaceDivisions();
     drawNodes();
@@ -146,8 +152,8 @@ function setSpeed(color, value) {
     return document.getElementById(color).value = value.toString();
 }
 
-function getRelativeTime() {
-    return parseInt(document.getElementById("relativeTime").value);
+function getTimeLapseRate() {
+    return parseInt(document.getElementById("timeLapseRate").value);
 }
 
 // logger function: log(string, color_as_string);
@@ -183,28 +189,28 @@ function example_log_setter() {
     counter += 1;
 }*/
 
-var timerId;
-
-function startTimer() {
-    timerId = setInterval(broadcastPositions, params.broadcastInterval);
-}
-startTimer();
-
-function stopTimer() {
-    clearInterval(timerId);
-}
-
-function broadcastPositions() {
-    for ([color, node] of Object.entries(nodes)) {
-        log(`Broadcasting position of node [${color}]`, color);
-        for ([_color, _node] of Object.entries(nodes)) {
-            if (node != _node && isInRadius(node, _node)) {
-                log(`Node [${_color}] received position from node [${color}]`, _color);
-                handleTooCloseSituationIfExists(color, node, _color, _node);
-            }
-        }
-        log(`\n`, color);
+function tryBroadcast(color, node) {
+    if (previousActiveSpaceDivision != activeSpaceDivision && isNodeInSpaceDivision(node, activeSpaceDivision)) {
+        broadcastPosition(color, node);
     }
+}
+
+function isNodeInSpaceDivision(node, spaceDivision) {
+    return node.x >= spaceDivision.x &&
+           node.x < spaceDivision.x + spaceDivision.width &&
+           node.y >= spaceDivision.y &&
+           node.y < spaceDivision.y + spaceDivision.height;
+}
+
+function broadcastPosition(color, node) {
+    log(`Broadcasting position of node [${color}]`, color);
+    for ([_color, _node] of Object.entries(nodes)) {
+        if (node != _node && isInRadius(node, _node)) {
+            log(`Node [${_color}] received position from node [${color}]`, _color);
+            handleTooCloseSituationIfExists(color, node, _color, _node);
+        }
+    }
+    log(`\n`, color);
 }
 
 function isInRadius(sourceNode, targetNode) {
@@ -256,11 +262,9 @@ function addButtonEventHandlers() {
         paused = !paused;
         if (!paused) {
             draw();
-            startTimer();
             console.log("Started.")
         }
         else {
-            stopTimer();
             console.log("Paused.")
         }
     };
