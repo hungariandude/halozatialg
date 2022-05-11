@@ -207,6 +207,9 @@ function broadcastPosition(color, node) {
     for ([_color, _node] of Object.entries(nodes)) {
         if (node != _node && isInRadius(node, _node)) {
             log(`Node [${_color}] received position from node [${color}]`, _color);
+            if (_node.x > node.x) {
+                continue;
+            }
             handleTooCloseSituationIfExists(color, node, _color, _node);
         }
     }
@@ -237,9 +240,11 @@ function handleTooCloseSituationIfExists(color1, node1, color2, node2) {
 
         if (node1.x <= node2.x && speedOfNode1 > speedOfNode2) {
             changeLaneOrSlowDown(node1);
+            log(`Node with color [${color1}] changed lane`, color1);
         }
         else if (node1.x > node2.x && speedOfNode1 < speedOfNode2) {
             changeLaneOrSlowDown(node2);
+            log(`Node with color [${color2}] changed lane`, color2);
         }
     }
 }
